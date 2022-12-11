@@ -46,10 +46,10 @@ jobs:
 
       - name: Build and Publish image
         run: |
-          docker build . -f Dockerfile -t $(DOCKERREPO)/lg-app:${{ steps.tag_version.outputs.new_version }}
-          docker tag $(DOCKERREPO)/$(PROJECT):${{ steps.tag_version.outputs.new_version }} $(DOCKERREPO)/$(PROJECT):latest
-          docker push $(DOCKERREPO)/$(PROJECT):latest
-          docker push $(DOCKERREPO)/$(PROJECT):${{ steps.tag_version.outputs.new_version }}
+          docker build . -f Dockerfile -t ${{ secrets.AWS_ACCT }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/narc-vulnerable:${{ steps.tag_version.outputs.new_version }}
+          docker tag ${{ secrets.AWS_ACCT }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/narc-vulnerable:${{ steps.tag_version.outputs.new_version }} ${{ secrets.AWS_ACCT }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/narc-vulnerable:latest
+          docker push ${{ secrets.AWS_ACCT }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/narc-vulnerable:latest
+          docker push ${{ secrets.AWS_ACCT }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com/narc-vulnerable:${{ steps.tag_version.outputs.new_version }}
         env:
           AWS_REGION: ${{ secrets.AWS_REGION }}
           AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCT }}
