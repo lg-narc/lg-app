@@ -1,0 +1,56 @@
+name: Publish
+on:
+  push:
+    branches:
+      - master
+  workflow_dispatch: {}
+
+env:
+  PROJECT: narc-vulnerable
+
+jobs:
+  publish:
+    name: Publish Docker image
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Bump version and push tag
+        id: tag_version
+        uses: mathieudutour/github-tag-action@v5.5
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          release_branches: master,main
+          tag_prefix: v
+
+      - name: Setup git
+        run: |
+          git config --global credential.helper ""
+          git config --global --add credential.helper store
+          echo "https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com" >> ~/.git-credentials
+          git config --global url."https://github.com/".insteadof git@github.com:
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v1
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET }}
+          aws-region: ${{ secrets.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v1
+
+      - name: Build and Publish image
+        run: |
+          docker build . -f Dockerfile -t $(DOCKERREPO)/lg-app:${{ steps.tag_version.outputs.new_version }}
+          docker tag $(DOCKERREPO)/$(PROJECT):${{ steps.tag_version.outputs.new_version }} $(DOCKERREPO)/$(PROJECT):latest
+          docker push $(DOCKERREPO)/$(PROJECT):latest
+          docker push $(DOCKERREPO)/$(PROJECT):${{ steps.tag_version.outputs.new_version }}
+        env:
+          AWS_REGION: ${{ secrets.AWS_REGION }}
+          AWS_ACCOUNT_ID: ${{ secrets.AWS_ACCT }}
+          DOCKERREPO: ${{ secrets.AWS_ACCT }}.dkr.ecr.${{ secrets.AWS_REGION }}.amazonaws.com
